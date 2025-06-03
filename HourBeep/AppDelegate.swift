@@ -8,9 +8,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var alarmTimer: Timer?
     private var audioPlayer: AVAudioPlayer?
     private var intervalMinutes: Int = 60
-    private var alarmMinutes: Int = 15
-    private var isTimerEnabled: Bool = true
-    private var isAlarmEnabled: Bool = false
+    private var alarmMinutes: Int = 0
+    private var isTimerEnabled: Bool = false
+    private var isAlarmEnabled: Bool = true
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         setupMenuBarItem()
@@ -44,8 +44,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let timer30 = NSMenuItem(title: "  Every 30 minutes", action: #selector(setTimer30), keyEquivalent: "")
         let timer60 = NSMenuItem(title: "  Every 1 hour", action: #selector(setTimer60), keyEquivalent: "")
         
-        timer60.state = .on
-        
         menu.addItem(timer15)
         menu.addItem(timer30)
         menu.addItem(timer60)
@@ -61,6 +59,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let alarm30 = NSMenuItem(title: "  At X:30", action: #selector(setAlarm30), keyEquivalent: "")
         let alarm45 = NSMenuItem(title: "  At X:45", action: #selector(setAlarm45), keyEquivalent: "")
         let alarm00 = NSMenuItem(title: "  At X:00", action: #selector(setAlarm00), keyEquivalent: "")
+        
+        alarm00.state = .on
         
         menu.addItem(alarm15)
         menu.addItem(alarm30)

@@ -42,12 +42,12 @@ A versatile macOS menu bar application that plays a beep sound using interval-ba
    - **Timer** _(section header)_
      - Every 15 minutes - Toggle 15-minute interval timer
      - Every 30 minutes - Toggle 30-minute interval timer  
-     - Every 1 hour - Toggle 1-hour interval timer (default: on)
+     - Every 1 hour - Toggle 1-hour interval timer
    - **Alarm** _(section header)_
      - At X:15 - Toggle alarm at 15 minutes past each hour
      - At X:30 - Toggle alarm at 30 minutes past each hour
      - At X:45 - Toggle alarm at 45 minutes past each hour
-     - At X:00 - Toggle alarm on the hour
+     - At X:00 - Toggle alarm on the hour (default: on)
    - **Quit Hour Beep** - Exit the application
 
 ### Menu Options
@@ -58,12 +58,12 @@ A versatile macOS menu bar application that plays a beep sound using interval-ba
 | **Timer** | **Interval-based notifications** | |
 | → Every 15 minutes | Beep every 15 minutes continuously | Click to enable/disable |
 | → Every 30 minutes | Beep every 30 minutes continuously | Click to enable/disable |
-| → Every 1 hour | Beep every hour continuously (default: on) | Click to enable/disable |
+| → Every 1 hour | Beep every hour continuously | Click to enable/disable |
 | **Alarm** | **Time-based notifications** | |
 | → At X:15 | Beep at X:15 (18:15, 19:15, 20:15, etc.) | Click to enable/disable |
 | → At X:30 | Beep at X:30 (18:30, 19:30, 20:30, etc.) | Click to enable/disable |
 | → At X:45 | Beep at X:45 (18:45, 19:45, 20:45, etc.) | Click to enable/disable |
-| → At X:00 | Beep at X:00 (19:00, 20:00, 21:00, etc.) | Click to enable/disable |
+| → At X:00 | Beep at X:00 (19:00, 20:00, 21:00, etc.) (default: on) | Click to enable/disable |
 | Quit Hour Beep | Closes the application | Exit app |
 
 Active options will show a checkmark (✓) next to them. Multiple options can be enabled simultaneously.
