@@ -1,11 +1,13 @@
 # Hour Beep
 
-A simple macOS menu bar application that plays a beep sound at customizable intervals to help you keep track of time.
+A versatile macOS menu bar application that plays a beep sound using interval-based timers and/or specific alarm times to help you keep track of time.
 
 ## Features
 
 - 🔔 Lives in your macOS menu bar - unobtrusive and always accessible
-- ⏰ Customizable intervals: 15 minutes, 30 minutes, or 1 hour
+- ⏰ **Timer Mode**: Interval-based notifications (15 minutes, 30 minutes, or 1 hour)
+- 🕐 **Alarm Mode**: Time-based notifications (15/30 minutes past hour, or on the hour)
+- 🔄 **Dual Mode**: Both timer and alarm can run simultaneously
 - 🎵 Custom sound support (MP3 format)
 - 🎛️ Volume control (80% by default)
 - 🖱️ Manual beep trigger
@@ -37,22 +39,54 @@ A simple macOS menu bar application that plays a beep sound at customizable inte
 1. **Launch the app** - A bell icon will appear in your menu bar
 2. **Click the icon** to access the menu with these options:
    - **Beep** - Trigger an immediate beep sound
-   - **15 minutes** - Set beep interval to every 15 minutes
-   - **30 minutes** - Set beep interval to every 30 minutes  
-   - **1 hour** - Set beep interval to every hour (default)
+   - **Timer** _(section header)_
+     - Every 15 minutes - Toggle 15-minute interval timer
+     - Every 30 minutes - Toggle 30-minute interval timer  
+     - Every 1 hour - Toggle 1-hour interval timer (default: on)
+   - **Alarm** _(section header)_
+     - At X:15 - Toggle alarm at 15 minutes past each hour
+     - At X:30 - Toggle alarm at 30 minutes past each hour
+     - At X:45 - Toggle alarm at 45 minutes past each hour
+     - At X:00 - Toggle alarm on the hour
    - **Quit Hour Beep** - Exit the application
 
 ### Menu Options
 
-| Option | Description |
-|--------|-------------|
-| Beep | Plays the beep sound immediately |
-| 15 minutes | Sets automatic beep every 15 minutes |
-| 30 minutes | Sets automatic beep every 30 minutes |
-| 1 hour | Sets automatic beep every hour (default) |
-| Quit Hour Beep | Closes the application |
+| Option | Description | Toggle Behavior |
+|--------|-------------|-----------------|
+| Beep | Plays the beep sound immediately | One-time action |
+| **Timer** | **Interval-based notifications** | |
+| → Every 15 minutes | Beep every 15 minutes continuously | Click to enable/disable |
+| → Every 30 minutes | Beep every 30 minutes continuously | Click to enable/disable |
+| → Every 1 hour | Beep every hour continuously (default: on) | Click to enable/disable |
+| **Alarm** | **Time-based notifications** | |
+| → At X:15 | Beep at X:15 (18:15, 19:15, 20:15, etc.) | Click to enable/disable |
+| → At X:30 | Beep at X:30 (18:30, 19:30, 20:30, etc.) | Click to enable/disable |
+| → At X:45 | Beep at X:45 (18:45, 19:45, 20:45, etc.) | Click to enable/disable |
+| → At X:00 | Beep at X:00 (19:00, 20:00, 21:00, etc.) | Click to enable/disable |
+| Quit Hour Beep | Closes the application | Exit app |
 
-The currently selected interval will show a checkmark (✓) next to it.
+Active options will show a checkmark (✓) next to them. Multiple options can be enabled simultaneously.
+
+### Timer and Alarm Modes
+
+**Timer Mode** (Interval-based): 
+- Repeats every X minutes from when you enable it
+- Continuous interval-based notifications
+- Example: Enable "Every 30 minutes" at 18:17 → beeps at 18:47, 19:17, 19:47...
+- Can have one timer interval active at a time
+
+**Alarm Mode** (Time-based):
+- Beeps at specific clock times regardless of when enabled
+- Synchronized with actual time
+- Example: Enable "At X:15" → beeps at 18:15, 19:15, 20:15...
+- Available times: X:00, X:15, X:30, X:45 (quarter-hour intervals)
+- Can have one alarm time active at a time
+
+**Dual Mode** (Both active):
+- Timer and alarm can run simultaneously
+- Example: "Every 30 minutes" + "At X:15" both active
+- You'll get beeps from both systems independently
 
 ## Customization
 
@@ -113,7 +147,8 @@ HourBeep/
 ### Key Components
 
 - **NSStatusItem** - Menu bar icon and menu
-- **Timer** - Interval-based beep scheduling  
+- **Timer** - Both interval-based and time-based scheduling
+- **Calendar** - Alarm time calculations and next occurrence detection
 - **AVAudioPlayer** - MP3 sound playback
 - **NSSound** - Fallback system sounds
 - **Custom Icon** - Programmatically drawn bell icon
