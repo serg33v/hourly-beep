@@ -335,25 +335,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     private func getNextTimerCountdown() -> String {
-        guard !enabledIntervals.isEmpty else { return "" }
+        guard !enabledIntervals.isEmpty else { 
+            return ""
+        }
         
         let now = Date()
         var nextBeepTime: TimeInterval = Double.greatestFiniteMagnitude
         
         // Find the soonest timer beep
         for interval in enabledIntervals {
-            guard let startTime = timerStartTimes[interval] else { continue }
+            guard let startTime = timerStartTimes[interval] else { 
+                // If no start time recorded, record it now
+                timerStartTimes[interval] = now
+                continue 
+            }
             
             let intervalSeconds = TimeInterval(interval * 60)
             let elapsedTime = now.timeIntervalSince(startTime)
             let timeUntilNext = intervalSeconds - elapsedTime.truncatingRemainder(dividingBy: intervalSeconds)
             
-            if timeUntilNext < nextBeepTime {
-                nextBeepTime = timeUntilNext
+            // Ensure we don't show 0 or negative time
+            let adjustedTime = timeUntilNext <= 0 ? intervalSeconds : timeUntilNext
+            
+            if adjustedTime < nextBeepTime {
+                nextBeepTime = adjustedTime
             }
         }
         
-        if nextBeepTime == Double.greatestFiniteMagnitude || nextBeepTime <= 0 {
+        if nextBeepTime == Double.greatestFiniteMagnitude {
             return ""
         }
         
