@@ -92,15 +92,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         activeTimers.forEach { $0.invalidate() }
         activeTimers.removeAll()
         
+        // Remove start times for intervals that are no longer enabled
+        let disabledIntervals = Set(timerStartTimes.keys).subtracting(enabledIntervals)
+        for interval in disabledIntervals {
+            timerStartTimes.removeValue(forKey: interval)
+        }
+        
         // Create new timers for each enabled interval
         for interval in enabledIntervals {
             let intervalSeconds = TimeInterval(interval * 60)
+            
+            // Only set start time if not already set (preserve existing timers)
+            if timerStartTimes[interval] == nil {
+                timerStartTimes[interval] = Date()
+            }
+            
             let timer = Timer.scheduledTimer(withTimeInterval: intervalSeconds, repeats: true) { _ in
                 self.playBeep()
                 self.timerStartTimes[interval] = Date() // Reset start time after beep
             }
             activeTimers.append(timer)
-            timerStartTimes[interval] = Date() // Record start time
         }
     }
     
@@ -335,18 +346,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     private func getNextTimerCountdown() -> String {
-        guard !enabledIntervals.isEmpty else { 
+        guard !enabledIntervals.isEmpty || !enabledAlarmMinutes.isEmpty else { 
             return ""
         }
         
         let now = Date()
         var nextBeepTime: TimeInterval = Double.greatestFiniteMagnitude
         
-        // Find the soonest timer beep
+        // Check interval timers
         for interval in enabledIntervals {
             guard let startTime = timerStartTimes[interval] else { 
-                // If no start time recorded, record it now
-                timerStartTimes[interval] = now
                 continue 
             }
             
@@ -359,6 +368,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             
             if adjustedTime < nextBeepTime {
                 nextBeepTime = adjustedTime
+            }
+        }
+        
+        // Check alarm times
+        let calendar = Calendar.current
+        for minutes in enabledAlarmMinutes {
+            var nextAlarmTime: Date?
+            
+            if minutes == 0 {
+                // On the hour (e.g., 19:00, 20:00)
+                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
+            } else {
+                // Specific minutes past the hour (e.g., 18:15, 19:15)
+                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: minutes, second: 0), matchingPolicy: .nextTime)
+            }
+            
+            if let alarmTime = nextAlarmTime {
+                let timeUntilAlarm = alarmTime.timeIntervalSince(now)
+                if timeUntilAlarm < nextBeepTime {
+                    nextBeepTime = timeUntilAlarm
+                }
             }
         }
         
@@ -377,9 +407,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         // Start frequent updates when menu is open
         menuUpdateTimer?.invalidate()
-        menuUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            self.updateTimerHeader()
+        
+        // Create timer on main run loop to ensure it works during menu interaction
+        menuUpdateTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateTimerHeader()
+            }
         }
+        
+        // Add to common run loop modes so it continues during menu tracking
+        RunLoop.main.add(menuUpdateTimer!, forMode: .common)
+        
         // Update immediately
         updateTimerHeader()
     }
