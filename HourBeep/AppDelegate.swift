@@ -14,9 +14,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var activeAlarms: [Timer] = []
     private var enabledAlarmMinutes: Set<Int> = [0] // Default: hourly (X:00)
     
+    // Countdown display
+    private var countdownTimer: Timer?
+    private var timerStartTimes: [Int: Date] = [:]
+    
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         setupMenuBarItem()
         setupHourlyTimer()
+        startCountdownUpdater()
     }
     
     private func setupMenuBarItem() {
@@ -90,8 +95,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let intervalSeconds = TimeInterval(interval * 60)
             let timer = Timer.scheduledTimer(withTimeInterval: intervalSeconds, repeats: true) { _ in
                 self.playBeep()
+                self.timerStartTimes[interval] = Date() // Reset start time after beep
             }
             activeTimers.append(timer)
+            timerStartTimes[interval] = Date() // Record start time
         }
     }
     
@@ -213,6 +220,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func toggleTimer(interval: Int) {
         if enabledIntervals.contains(interval) {
             enabledIntervals.remove(interval)
+            timerStartTimes.removeValue(forKey: interval)
         } else {
             enabledIntervals.insert(interval)
         }
@@ -301,9 +309,62 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return image
     }
     
+    private func startCountdownUpdater() {
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            self.updateTimerHeader()
+        }
+    }
+    
+    private func updateTimerHeader() {
+        guard let menu = statusItem?.menu else { return }
+        
+        // Find the timer header menu item
+        for item in menu.items {
+            if item.title.hasPrefix("Timer") {
+                let countdownText = getNextTimerCountdown()
+                if countdownText.isEmpty {
+                    item.title = "Timer"
+                } else {
+                    item.title = "Timer - Next: \(countdownText)"
+                }
+                break
+            }
+        }
+    }
+    
+    private func getNextTimerCountdown() -> String {
+        guard !enabledIntervals.isEmpty else { return "" }
+        
+        let now = Date()
+        var nextBeepTime: TimeInterval = Double.greatestFiniteMagnitude
+        
+        // Find the soonest timer beep
+        for interval in enabledIntervals {
+            guard let startTime = timerStartTimes[interval] else { continue }
+            
+            let intervalSeconds = TimeInterval(interval * 60)
+            let elapsedTime = now.timeIntervalSince(startTime)
+            let timeUntilNext = intervalSeconds - elapsedTime.truncatingRemainder(dividingBy: intervalSeconds)
+            
+            if timeUntilNext < nextBeepTime {
+                nextBeepTime = timeUntilNext
+            }
+        }
+        
+        if nextBeepTime == Double.greatestFiniteMagnitude || nextBeepTime <= 0 {
+            return ""
+        }
+        
+        // Format time as MM:SS
+        let minutes = Int(nextBeepTime) / 60
+        let seconds = Int(nextBeepTime) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
     @objc private func quitApp() {
         activeTimers.forEach { $0.invalidate() }
         activeAlarms.forEach { $0.invalidate() }
+        countdownTimer?.invalidate()
         NSApplication.shared.terminate(nil)
     }
 }
