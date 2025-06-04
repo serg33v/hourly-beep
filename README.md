@@ -1,13 +1,14 @@
 # Hour Beep
 
-A versatile macOS menu bar application that plays a beep sound using interval-based timers and/or specific alarm times to help you keep track of time.
+A powerful and flexible macOS menu bar application that provides comprehensive time management with **multiple simultaneous timers and alarms** to help you stay productive and aware of time.
 
 ## Features
 
 - 🔔 Lives in your macOS menu bar - unobtrusive and always accessible
-- ⏰ **Timer Mode**: Interval-based notifications (15 minutes, 30 minutes, or 1 hour)
-- 🕐 **Alarm Mode**: Time-based notifications (15/30 minutes past hour, or on the hour)
-- 🔄 **Dual Mode**: Both timer and alarm can run simultaneously
+- ⏰ **Multiple Timer Support**: Run multiple interval timers simultaneously (15 min, 30 min, 1 hour)
+- 🕐 **Multiple Alarm Support**: Set multiple time-based alarms simultaneously (X:00, X:15, X:30, X:45)
+- 🔄 **Unlimited Combinations**: Mix and match any combination of timers and alarms
+- ✅ **Independent Toggle**: Click any timer or alarm to enable/disable it independently
 - 🎵 Custom sound support (MP3 format)
 - 🎛️ Volume control (80% by default)
 - 🖱️ Manual beep trigger
@@ -70,23 +71,24 @@ Active options will show a checkmark (✓) next to them. Multiple options can be
 
 ### Timer and Alarm Modes
 
-**Timer Mode** (Interval-based): 
-- Repeats every X minutes from when you enable it
-- Continuous interval-based notifications
-- Example: Enable "Every 30 minutes" at 18:17 → beeps at 18:47, 19:17, 19:47...
-- Can have one timer interval active at a time
+**Multiple Timer Support** (Interval-based): 
+- Run **multiple interval timers simultaneously**
+- Each timer repeats every X minutes from when you enable it
+- Example: Enable both "Every 15 minutes" and "Every 30 minutes" simultaneously
+- All enabled timers run independently and will beep at their respective intervals
 
-**Alarm Mode** (Time-based):
-- Beeps at specific clock times regardless of when enabled
-- Synchronized with actual time
-- Example: Enable "At X:15" → beeps at 18:15, 19:15, 20:15...
+**Multiple Alarm Support** (Time-based):
+- Set **multiple time-based alarms simultaneously** 
+- Each alarm beeps at specific clock times regardless of when enabled
+- Example: Enable "At X:15" and "At X:45" to beep at both quarter-past and quarter-to each hour
 - Available times: X:00, X:15, X:30, X:45 (quarter-hour intervals)
-- Can have one alarm time active at a time
+- All enabled alarms run independently
 
-**Dual Mode** (Both active):
-- Timer and alarm can run simultaneously
-- Example: "Every 30 minutes" + "At X:15" both active
-- You'll get beeps from both systems independently
+**Unlimited Combinations**:
+- **Any combination possible**: Mix multiple timers with multiple alarms
+- Example: "Every 15 minutes" + "Every 1 hour" + "At X:00" + "At X:30" all active
+- You'll get beeps from all enabled systems independently
+- Maximum flexibility for any workflow or schedule
 
 ## Customization
 
@@ -147,7 +149,8 @@ HourBeep/
 ### Key Components
 
 - **NSStatusItem** - Menu bar icon and menu
-- **Timer** - Both interval-based and time-based scheduling
+- **Multiple Timer Management** - Simultaneous interval-based scheduling with independent timers
+- **Multiple Alarm Management** - Simultaneous time-based scheduling with calendar integration
 - **Calendar** - Alarm time calculations and next occurrence detection
 - **AVAudioPlayer** - MP3 sound playback
 - **NSSound** - Fallback system sounds
@@ -199,5 +202,5 @@ This project is open source. Feel free to modify and distribute according to you
 ---
 
 **Author:** Created with [Claude Code](https://claude.ai/code)  
-**Version:** 1.0  
+**Version:** 2.0 - Multiple Timers & Alarms Support  
 **Last Updated:** 2025

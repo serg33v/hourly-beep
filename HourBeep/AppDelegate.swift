@@ -4,13 +4,15 @@ import AVFoundation
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var statusItem: NSStatusItem?
-    private var intervalTimer: Timer?
-    private var alarmTimer: Timer?
     private var audioPlayer: AVAudioPlayer?
-    private var intervalMinutes: Int = 60
-    private var alarmMinutes: Int = 0
-    private var isTimerEnabled: Bool = false
-    private var isAlarmEnabled: Bool = true
+    
+    // Multiple timers support
+    private var activeTimers: [Timer] = []
+    private var enabledIntervals: Set<Int> = []
+    
+    // Multiple alarms support  
+    private var activeAlarms: [Timer] = []
+    private var enabledAlarmMinutes: Set<Int> = [0] // Default: hourly (X:00)
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         setupMenuBarItem()
@@ -74,47 +76,81 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupHourlyTimer() {
-        setupIntervalTimer()
-        setupAlarmTimer()
+        setupAllTimers()
+        setupAllAlarms()
     }
     
-    private func setupIntervalTimer() {
-        intervalTimer?.invalidate()
+    private func setupAllTimers() {
+        // Invalidate all existing timers
+        activeTimers.forEach { $0.invalidate() }
+        activeTimers.removeAll()
         
-        if isTimerEnabled {
-            let intervalSeconds = TimeInterval(intervalMinutes * 60)
-            intervalTimer = Timer.scheduledTimer(withTimeInterval: intervalSeconds, repeats: true) { _ in
+        // Create new timers for each enabled interval
+        for interval in enabledIntervals {
+            let intervalSeconds = TimeInterval(interval * 60)
+            let timer = Timer.scheduledTimer(withTimeInterval: intervalSeconds, repeats: true) { _ in
                 self.playBeep()
             }
+            activeTimers.append(timer)
         }
     }
     
-    private func setupAlarmTimer() {
-        alarmTimer?.invalidate()
+    private func setupAllAlarms() {
+        // Invalidate all existing alarms
+        activeAlarms.forEach { $0.invalidate() }
+        activeAlarms.removeAll()
         
-        if isAlarmEnabled {
-            let calendar = Calendar.current
-            let now = Date()
-            
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Create new alarms for each enabled time
+        for minutes in enabledAlarmMinutes {
             var nextAlarmTime: Date?
             
-            if alarmMinutes == 0 {
+            if minutes == 0 {
                 // On the hour (e.g., 19:00, 20:00)
                 nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
             } else {
                 // Specific minutes past the hour (e.g., 18:15, 19:15)
-                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: alarmMinutes, second: 0), matchingPolicy: .nextTime)
+                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: minutes, second: 0), matchingPolicy: .nextTime)
             }
             
-            guard let alarmTime = nextAlarmTime else { return }
+            guard let alarmTime = nextAlarmTime else { continue }
             
             let timeInterval = alarmTime.timeIntervalSince(now)
             
-            alarmTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { _ in
+            let timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { _ in
                 self.playBeep()
-                self.setupAlarmTimer() // Schedule next alarm
+                self.scheduleNextAlarm(for: minutes)
             }
+            activeAlarms.append(timer)
         }
+    }
+    
+    private func scheduleNextAlarm(for minutes: Int) {
+        // Only reschedule if this alarm is still enabled
+        guard enabledAlarmMinutes.contains(minutes) else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        var nextAlarmTime: Date?
+        
+        if minutes == 0 {
+            nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
+        } else {
+            nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: minutes, second: 0), matchingPolicy: .nextTime)
+        }
+        
+        guard let alarmTime = nextAlarmTime else { return }
+        
+        let timeInterval = alarmTime.timeIntervalSince(now)
+        
+        let timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { _ in
+            self.playBeep()
+            self.scheduleNextAlarm(for: minutes)
+        }
+        activeAlarms.append(timer)
     }
     
     
@@ -147,85 +183,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func setTimer15() {
-        if isTimerEnabled && intervalMinutes == 15 {
-            isTimerEnabled = false
-        } else {
-            isTimerEnabled = true
-            intervalMinutes = 15
-        }
-        setupIntervalTimer()
-        updateMenuCheckmarks()
+        toggleTimer(interval: 15)
     }
     
     @objc private func setTimer30() {
-        if isTimerEnabled && intervalMinutes == 30 {
-            isTimerEnabled = false
-        } else {
-            isTimerEnabled = true
-            intervalMinutes = 30
-        }
-        setupIntervalTimer()
-        updateMenuCheckmarks()
+        toggleTimer(interval: 30)
     }
     
     @objc private func setTimer60() {
-        if isTimerEnabled && intervalMinutes == 60 {
-            isTimerEnabled = false
-        } else {
-            isTimerEnabled = true
-            intervalMinutes = 60
-        }
-        setupIntervalTimer()
-        updateMenuCheckmarks()
+        toggleTimer(interval: 60)
     }
     
     @objc private func setAlarm15() {
-        if isAlarmEnabled && alarmMinutes == 15 {
-            isAlarmEnabled = false
-        } else {
-            isAlarmEnabled = true
-            alarmMinutes = 15
-        }
-        setupAlarmTimer()
-        updateMenuCheckmarks()
+        toggleAlarm(minutes: 15)
     }
     
     @objc private func setAlarm30() {
-        if isAlarmEnabled && alarmMinutes == 30 {
-            isAlarmEnabled = false
-        } else {
-            isAlarmEnabled = true
-            alarmMinutes = 30
-        }
-        setupAlarmTimer()
-        updateMenuCheckmarks()
+        toggleAlarm(minutes: 30)
     }
     
     @objc private func setAlarm45() {
-        if isAlarmEnabled && alarmMinutes == 45 {
-            isAlarmEnabled = false
-        } else {
-            isAlarmEnabled = true
-            alarmMinutes = 45
-        }
-        setupAlarmTimer()
-        updateMenuCheckmarks()
+        toggleAlarm(minutes: 45)
     }
     
     @objc private func setAlarm00() {
-        if isAlarmEnabled && alarmMinutes == 0 {
-            isAlarmEnabled = false
+        toggleAlarm(minutes: 0)
+    }
+    
+    private func toggleTimer(interval: Int) {
+        if enabledIntervals.contains(interval) {
+            enabledIntervals.remove(interval)
         } else {
-            isAlarmEnabled = true
-            alarmMinutes = 0
+            enabledIntervals.insert(interval)
         }
-        setupAlarmTimer()
+        setupAllTimers()
         updateMenuCheckmarks()
     }
     
-    private func updateInterval(_ minutes: Int) {
-        intervalMinutes = minutes
-        setupHourlyTimer()
+    private func toggleAlarm(minutes: Int) {
+        if enabledAlarmMinutes.contains(minutes) {
+            enabledAlarmMinutes.remove(minutes)
+        } else {
+            enabledAlarmMinutes.insert(minutes)
+        }
+        setupAllAlarms()
         updateMenuCheckmarks()
     }
     
@@ -239,22 +240,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             
             // Set checkmarks for enabled timers
-            if isTimerEnabled {
-                if (item.title == "  Every 15 minutes" && intervalMinutes == 15) ||
-                   (item.title == "  Every 30 minutes" && intervalMinutes == 30) ||
-                   (item.title == "  Every 1 hour" && intervalMinutes == 60) {
-                    item.state = .on
-                }
+            if (item.title == "  Every 15 minutes" && enabledIntervals.contains(15)) ||
+               (item.title == "  Every 30 minutes" && enabledIntervals.contains(30)) ||
+               (item.title == "  Every 1 hour" && enabledIntervals.contains(60)) {
+                item.state = .on
             }
             
             // Set checkmarks for enabled alarms
-            if isAlarmEnabled {
-                if (item.title == "  At X:15" && alarmMinutes == 15) ||
-                   (item.title == "  At X:30" && alarmMinutes == 30) ||
-                   (item.title == "  At X:45" && alarmMinutes == 45) ||
-                   (item.title == "  At X:00" && alarmMinutes == 0) {
-                    item.state = .on
-                }
+            if (item.title == "  At X:15" && enabledAlarmMinutes.contains(15)) ||
+               (item.title == "  At X:30" && enabledAlarmMinutes.contains(30)) ||
+               (item.title == "  At X:45" && enabledAlarmMinutes.contains(45)) ||
+               (item.title == "  At X:00" && enabledAlarmMinutes.contains(0)) {
+                item.state = .on
             }
         }
     }
@@ -305,8 +302,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func quitApp() {
-        intervalTimer?.invalidate()
-        alarmTimer?.invalidate()
+        activeTimers.forEach { $0.invalidate() }
+        activeAlarms.forEach { $0.invalidate() }
         NSApplication.shared.terminate(nil)
     }
 }
