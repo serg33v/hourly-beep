@@ -1,7 +1,7 @@
 import Cocoa
 import AVFoundation
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     
     private var statusItem: NSStatusItem?
     private var audioPlayer: AVAudioPlayer?
@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Countdown display
     private var countdownTimer: Timer?
     private var timerStartTimes: [Int: Date] = [:]
+    private var menuUpdateTimer: Timer?
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         setupMenuBarItem()
@@ -78,6 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit Hour Beep", action: #selector(quitApp), keyEquivalent: "q"))
         
         statusItem?.menu = menu
+        menu.delegate = self
     }
     
     private func setupHourlyTimer() {
@@ -361,10 +363,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return String(format: "%d:%02d", minutes, seconds)
     }
     
+    // MARK: - NSMenuDelegate
+    
+    func menuWillOpen(_ menu: NSMenu) {
+        // Start frequent updates when menu is open
+        menuUpdateTimer?.invalidate()
+        menuUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            self.updateTimerHeader()
+        }
+        // Update immediately
+        updateTimerHeader()
+    }
+    
+    func menuDidClose(_ menu: NSMenu) {
+        // Stop frequent updates when menu closes
+        menuUpdateTimer?.invalidate()
+        menuUpdateTimer = nil
+    }
+    
     @objc private func quitApp() {
         activeTimers.forEach { $0.invalidate() }
         activeAlarms.forEach { $0.invalidate() }
         countdownTimer?.invalidate()
+        menuUpdateTimer?.invalidate()
         NSApplication.shared.terminate(nil)
     }
 }
