@@ -331,14 +331,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func updateTimerHeader() {
         guard let menu = statusItem?.menu else { return }
         
-        // Find the timer header menu item
+        // Find and update the timer header menu item
         for item in menu.items {
             if item.title.hasPrefix("Timer") {
                 let countdownText = getNextTimerCountdown()
+                let absoluteTime = getNextTimerAbsoluteTime()
                 if countdownText.isEmpty {
                     item.title = "Timer"
                 } else {
-                    item.title = "Timer - Next: \(countdownText)"
+                    item.title = "Timer - Next: \(countdownText) (\(absoluteTime))"
+                }
+                break
+            }
+        }
+        
+        // Find and update the alarm header menu item
+        for item in menu.items {
+            if item.title.hasPrefix("Alarm") {
+                let alarmText = getNextAlarmCountdown()
+                if alarmText.isEmpty {
+                    item.title = "Alarm"
+                } else {
+                    item.title = "Alarm - Next: \(alarmText)"
                 }
                 break
             }
@@ -346,14 +360,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     private func getNextTimerCountdown() -> String {
-        guard !enabledIntervals.isEmpty || !enabledAlarmMinutes.isEmpty else { 
+        guard !enabledIntervals.isEmpty else { 
             return ""
         }
         
         let now = Date()
         var nextBeepTime: TimeInterval = Double.greatestFiniteMagnitude
         
-        // Check interval timers
+        // Check interval timers only
         for interval in enabledIntervals {
             guard let startTime = timerStartTimes[interval] else { 
                 continue 
@@ -371,27 +385,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         
-        // Check alarm times
-        let calendar = Calendar.current
-        for minutes in enabledAlarmMinutes {
-            var nextAlarmTime: Date?
-            
-            if minutes == 0 {
-                // On the hour (e.g., 19:00, 20:00)
-                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
-            } else {
-                // Specific minutes past the hour (e.g., 18:15, 19:15)
-                nextAlarmTime = calendar.nextDate(after: now, matching: DateComponents(minute: minutes, second: 0), matchingPolicy: .nextTime)
-            }
-            
-            if let alarmTime = nextAlarmTime {
-                let timeUntilAlarm = alarmTime.timeIntervalSince(now)
-                if timeUntilAlarm < nextBeepTime {
-                    nextBeepTime = timeUntilAlarm
-                }
-            }
-        }
-        
         if nextBeepTime == Double.greatestFiniteMagnitude {
             return ""
         }
@@ -400,6 +393,98 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let minutes = Int(nextBeepTime) / 60
         let seconds = Int(nextBeepTime) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func getNextTimerAbsoluteTime() -> String {
+        guard !enabledIntervals.isEmpty else { 
+            return ""
+        }
+        
+        let now = Date()
+        var nextBeepTime: TimeInterval = Double.greatestFiniteMagnitude
+        
+        // Check interval timers only
+        for interval in enabledIntervals {
+            guard let startTime = timerStartTimes[interval] else { 
+                continue 
+            }
+            
+            let intervalSeconds = TimeInterval(interval * 60)
+            let elapsedTime = now.timeIntervalSince(startTime)
+            let timeUntilNext = intervalSeconds - elapsedTime.truncatingRemainder(dividingBy: intervalSeconds)
+            
+            // Ensure we don't show 0 or negative time
+            let adjustedTime = timeUntilNext <= 0 ? intervalSeconds : timeUntilNext
+            
+            if adjustedTime < nextBeepTime {
+                nextBeepTime = adjustedTime
+            }
+        }
+        
+        if nextBeepTime == Double.greatestFiniteMagnitude {
+            return ""
+        }
+        
+        // Calculate absolute time when beep happens
+        let beepTime = now.addingTimeInterval(nextBeepTime)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: beepTime)
+    }
+    
+    private func getNextAlarmCountdown() -> String {
+        guard !enabledAlarmMinutes.isEmpty else {
+            return ""
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        var nextAlarmTime: Date?
+        
+        // Find the nearest alarm time from all enabled alarms
+        for minutes in enabledAlarmMinutes {
+            var candidateTime: Date?
+            
+            if minutes == 0 {
+                // On the hour (e.g., 19:00, 20:00)
+                candidateTime = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
+            } else {
+                // Specific minutes past the hour (e.g., 18:15, 19:15)
+                candidateTime = calendar.nextDate(after: now, matching: DateComponents(minute: minutes, second: 0), matchingPolicy: .nextTime)
+            }
+            
+            if let candidate = candidateTime {
+                if nextAlarmTime == nil || candidate < nextAlarmTime! {
+                    nextAlarmTime = candidate
+                }
+            }
+        }
+        
+        guard let alarmTime = nextAlarmTime else {
+            return ""
+        }
+        
+        let timeInterval = alarmTime.timeIntervalSince(now)
+        
+        // Format countdown time as MM:SS or HH:MM for longer times
+        let totalSeconds = Int(timeInterval)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        
+        let countdownText: String
+        if hours > 0 {
+            countdownText = String(format: "%d:%02d", hours, minutes)
+        } else {
+            countdownText = String(format: "%d:%02d", minutes, seconds)
+        }
+        
+        // Format absolute time (HH:MM)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let absoluteTime = formatter.string(from: alarmTime)
+        
+        return "\(countdownText) (\(absoluteTime))"
     }
     
     // MARK: - NSMenuDelegate
